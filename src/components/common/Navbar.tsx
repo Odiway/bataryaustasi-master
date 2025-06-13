@@ -63,6 +63,17 @@ className:
       </span>
 
   ), },
+      {
+    href: '/anomal',
+    label: 'Cycle',
+className:
+      'group relative px-4 py-2 rounded-xl font-semibold bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 text-white shadow-lg transition-all',
+       badge: (
+      <span className="absolute -top-2 -right-2 bg-gradient-to-r from-blue-400 to-blue-700 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow">
+        NEW
+      </span>
+
+  ), },
   {
     href: '/Depo',
     label: 'Depo',
@@ -146,7 +157,7 @@ export default function Navbar() {
             </svg>
           </span>
           <span className="text-2xl font-extrabold tracking-wide bg-gradient-to-r from-blue-300 via-blue-400 to-gray-200 bg-clip-text text-transparent drop-shadow-lg">
-            Temsa Batarya R&D
+            R&D
           </span>
         </Link>
 

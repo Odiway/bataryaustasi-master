@@ -12,6 +12,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@google/generative-ai": "^0.24.1",
     "@heroicons/react": "^2.2.0",
+<<<<<<< HEAD
     "axios": "^1.10.0",
     "exceljs": "^4.4.0",
     "formidable": "^3.5.4",
@@ -23,17 +24,28 @@
     "openai": "^5.3.0",
     "pdf-parse": "^1.1.1",
     "pdf2pic": "^3.2.0",
+=======
+    "framer-motion": "^12.17.0",
+    "lucide-react": "^0.514.0",
+    "next": "15.3.3",
+    "openai": "^5.3.0",
+>>>>>>> db68df3d5075cd1e50dcbcfc1066b44e4c884618
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.5.2",
     "react-icons": "^5.5.0",
+<<<<<<< HEAD
     "recharts": "^2.15.3",
     "tesseract.js": "^6.0.1",
     "xlsx": "^0.18.5"
+=======
+    "recharts": "^2.15.3"
+>>>>>>> db68df3d5075cd1e50dcbcfc1066b44e4c884618
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+<<<<<<< HEAD
     "@types/formidable": "^3.4.5",
     "@types/multer": "^1.4.13",
     "@types/node": "^20",
@@ -42,6 +54,11 @@
     "@types/react-dom": "^19",
     "@types/tesseract.js": "^0.0.2",
     "@types/xlsx": "^0.0.35",
+=======
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+>>>>>>> db68df3d5075cd1e50dcbcfc1066b44e4c884618
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "tailwindcss": "^4",

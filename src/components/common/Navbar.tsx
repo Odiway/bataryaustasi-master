@@ -40,6 +40,7 @@ className:
       <span className="absolute -top-2 -right-2 bg-gradient-to-r from-blue-400 to-blue-700 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow">
         NEW
       </span>
+<<<<<<< HEAD
       ),},  {
     href: '/asistan',
     label: 'Asistan',
@@ -49,6 +50,8 @@ className:
       <span className="absolute -top-2 -right-2 bg-gradient-to-r from-blue-400 to-blue-700 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow">
         NEW
       </span>
+=======
+>>>>>>> db68df3d5075cd1e50dcbcfc1066b44e4c884618
       ),},
   {
     href: '/SanalHat',

@@ -30,7 +30,11 @@ export default function HomePage() {
         Projenize hoş geldiniz!
       </p>
       <a
+<<<<<<< HEAD
         href="/auth/Login"
+=======
+        href="#"
+>>>>>>> db68df3d5075cd1e50dcbcfc1066b44e4c884618
         className="inline-block bg-gradient-to-r from-blue-700 to-blue-500 hover:from-blue-800 hover:to-blue-600 text-white font-bold py-4 px-16 rounded-full shadow-lg transition-all duration-200 scale-100 hover:scale-105 text-xl"
       >
         Giriş Yap

@@ -32,7 +32,7 @@ className:
       </span>
   ),},
   {
-    href: '/guidelines',
+    href: '/guidelist',
     label: 'Rehberler',
 className:
       'group relative px-4 py-2 rounded-xl font-semibold bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 text-white shadow-lg transition-all',

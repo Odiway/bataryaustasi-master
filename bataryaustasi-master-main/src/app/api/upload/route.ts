@@ -1,98 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { connectToDatabase } from '../../../lib/mongodb';
 
-// PDF işleme şu an için manuel olarak devre dışı bırakılmıştır.
-// Eğer pdf-parse sorununu çözerseniz (daha karmaşık olabilir), bu satırı aktif edebilirsiniz:
-// import pdf from 'pdf-parse';
+const GEMINI_API_KEY = process.env.GOOGLE_API_KEY;
+const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
-import * as xlsx from 'xlsx'; // xlsx kütüphanesinin kurulu olduğundan emin olun
+// DÜZELTME: En stabil model adı olan "text-embedding-004" kullanıldı.
+const embeddingModel = genAI ? genAI.getGenerativeModel({ model: "text-embedding-004" }) : null;
 
-// Geçici olarak yüklenecek dosyaların depolama dizini
-const uploadDir = path.join(process.cwd(), 'uploads');
+function chunkText(text: string, chunkSize = 1000, overlap = 100): string[] {
+    const chunks: string[] = [];
+    for (let i = 0; i < text.length; i += chunkSize - overlap) {
+        chunks.push(text.substring(i, i + chunkSize));
+    }
+    return chunks;
+}
 
 export async function POST(req: NextRequest) {
-  // Yükleme dizininin var olduğundan emin olun
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
-  }
-
-  const processedContents: { [fileName: string]: string } = {};
-  const errors: string[] = [];
-
-  try {
-    const formData = await req.formData();
-    const files = formData.getAll('files') as File[];
-
-    if (files.length === 0) {
-      return NextResponse.json({ message: 'No files uploaded.' }, { status: 400 });
+    if (!embeddingModel) {
+        return NextResponse.json({ message: 'Embedding modeli başlatılamadı.' }, { status: 500 });
     }
+    
+    try {
+        const { mongoClient, db } = await connectToDatabase();
+        const collection = db.collection('document_chunks');
+        
+        const { documents } = await req.json();
 
-    for (const file of files) {
-      const fileName = file.name;
-      const fileBuffer = Buffer.from(await file.arrayBuffer());
-      const tempFilePath = path.join(uploadDir, `${Date.now()}-${fileName}`);
+        if (!documents || typeof documents !== 'object' || Object.keys(documents).length === 0) {
+            return NextResponse.json({ message: 'İşlenecek döküman metni bulunamadı.' }, { status: 400 });
+        }
 
-      fs.writeFileSync(tempFilePath, fileBuffer); // Dosyayı geçici olarak diske yaz
+        for (const fileName in documents) {
+            const text = documents[fileName];
+            if (!text) continue;
 
-      let extractedData = '';
+            const textChunks = chunkText(text);
 
-      try {
-        if (file.type === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf')) {
-          // PDF işleme şu anda devre dışı bırakılmıştır.
-          // Eğer pdf-parse hatasını çözerseniz aşağıdaki yorum satırlarını açabilirsiniz.
-          // const pdf = (await import('pdf-parse')).default; // Dinamik import
-          // const data = await pdf(fileBuffer);
-          // extractedData = data.text || '';
-          extractedData = `PDF işleme şu anda devre dışı: ${fileName}`;
-          errors.push(`PDF işleme atlandı (pdf-parse kütüphanesi hatası nedeniyle): ${fileName}`);
-        } else if (file.type && (file.type.includes('excel') || fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || fileName.endsWith('.csv'))) {
-          // Excel ve CSV işleme
-          const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
-          workbook.SheetNames.forEach(sheetName => {
-            const sheet = workbook.Sheets[sheetName];
-            const jsonData = xlsx.utils.sheet_to_json(sheet, { header: 1, raw: false });
-            extractedData += `\n--- Sayfa: ${sheetName} ---\n`;
-            (jsonData as any[][]).forEach((row: any[]) => {
-              extractedData += row.join('\t') + '\n';
+            const embeddings = await embeddingModel.batchEmbedContents({
+                requests: textChunks.map(chunk => ({
+                    content: {
+                        role: "user",
+                        parts: [{ text: chunk }]
+                    }
+                })),
             });
-          });
-        } else {
-          // Desteklenmeyen diğer dosya türleri veya resim tabanlı dosyalar için OCR denemesi (şimdilik basit)
-          console.warn(`Attempting OCR for unsupported type or image: ${fileName}`);
-          extractedData = `Metin tanıma (OCR) desteği bu aşamada sınırlıdır. Dosya: ${fileName}`;
-          errors.push(`OCR (Tesseract.js) entegrasyonu sunucu tarafında ek kurulum gerektirir. Dosya: ${fileName}`);
+            
+            if (embeddings.embeddings && Array.isArray(embeddings.embeddings)) {
+                const documentsToInsert = textChunks.map((chunk, index) => ({
+                    fileName: fileName,
+                    text: chunk,
+                    embedding: embeddings.embeddings[index]?.values || [],
+                }));
+
+                await collection.insertMany(documentsToInsert);
+            }
         }
-        processedContents[fileName] = extractedData;
 
-      } catch (fileProcessError: any) {
-        console.error(`Error processing file ${fileName}:`, fileProcessError);
-        processedContents[fileName] = `Hata: Dosya işlenemedi. ${fileProcessError.message}`;
-        errors.push(`Dosya işleme hatası ${fileName}: ${fileProcessError.message}`);
-      } finally {
-        try {
-          fs.unlinkSync(tempFilePath); // İşlem bitince geçici dosyayı sil
-        } catch (unlinkError) {
-          console.error(`Error deleting temp file ${tempFilePath}:`, unlinkError);
-        }
-      }
+        return NextResponse.json({ success: true, message: 'Dosyalar başarıyla işlendi ve vektör veritabanına kaydedildi.' });
+
+    } catch (error: any) {
+        console.error("Upload & Embedding API hatası:", error);
+        return NextResponse.json({ success: false, message: 'Sunucuda metin işlenirken bir hata oluştu: ' + error.message }, { status: 500 });
     }
-
-    if (errors.length > 0) {
-      return NextResponse.json({
-        message: 'Bazı dosyalar işlenirken sorun oluştu.',
-        content: processedContents,
-        errors: errors
-      }, { status: 206 }); // 206 Partial Content
-    }
-
-    return NextResponse.json({
-      message: 'Dosyalar başarıyla yüklendi ve işlendi',
-      content: processedContents
-    }, { status: 200 }); // 200 OK
-
-  } catch (err: any) {
-    console.error('File upload or processing error:', err);
-    return NextResponse.json({ message: 'Internal server error during file upload.', error: err.message }, { status: 500 }); // 500 Internal Server Error
-  }
 }
